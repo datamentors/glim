@@ -4,6 +4,7 @@
 #include <spdlog/spdlog.h>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/serialization.hpp>
+#include <rclcpp_lifecycle/lifecycle_node.hpp>
 #include <glim/util/extension_module.hpp>
 
 namespace glim {
@@ -14,7 +15,7 @@ public:
 
   GenericTopicSubscription(const std::string& topic, const std::string& msg_type = "") : topic(topic), msg_type(msg_type) {}
 
-  virtual void create_subscriber(rclcpp::Node& node) = 0;
+  virtual void create_subscriber(rclcpp_lifecycle::LifecycleNode& node) = 0;
   virtual void insert_message_instance(const rclcpp::SerializedMessage& serialized_msg, const std::string& msg_type = "") = 0;
 
   const std::string topic;
@@ -32,7 +33,7 @@ public:
                                                                                                        callback(callback) {}
   ~TopicSubscription() {}
 
-  virtual void create_subscriber(rclcpp::Node& node) override {
+  virtual void create_subscriber(rclcpp_lifecycle::LifecycleNode& node) override {
     if (!this->msg_type.empty()) {
       const auto topics_types = node.get_topic_names_and_types();
       const auto found = topics_types.find(topic);
@@ -75,8 +76,16 @@ public:
   ExtensionModuleROS2() {}
   virtual ~ExtensionModuleROS2() {}
 
-  virtual std::vector<GenericTopicSubscription::Ptr> create_subscriptions(rclcpp::Node& node) { return create_subscriptions(); }
+  virtual std::vector<GenericTopicSubscription::Ptr> create_subscriptions(rclcpp_lifecycle::LifecycleNode& node) { return create_subscriptions(); }
   virtual std::vector<GenericTopicSubscription::Ptr> create_subscriptions() { return {}; }
+
+  // Hooks for modules that create their own LifecyclePublishers (e.g.
+  // RvizViewer, BBS3DExtension). A LifecyclePublisher silently drops publish()
+  // calls until on_activate() is called on it, so GlimROS calls these on every
+  // loaded ExtensionModuleROS2 from its own on_activate()/on_deactivate() --
+  // modules with no publishers of their own just use these no-op defaults.
+  virtual void on_activate() {}
+  virtual void on_deactivate() {}
 };
 
 }  // namespace glim
