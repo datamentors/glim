@@ -14,6 +14,7 @@ option(BUILD_WITH_CUDA_MULTIARCH "Build with GPU cross-platform support" OFF)
 option(BUILD_WITH_VIEWER "Build with visualizer" ON)
 option(BUILD_WITH_MARCH_NATIVE "Build with -march=native" OFF)
 option(BUILD_WITH_OPENCV "Build with OpenCV to support camera images" ON)
+option(BUILD_TESTING "Build GLIM regression tests" OFF)
 
 if(BUILD_WITH_MARCH_NATIVE)
   add_definitions(-march=native)
@@ -119,6 +120,14 @@ if(BUILD_WITH_OPENCV)
   target_compile_definitions(glim PUBLIC GLIM_USE_OPENCV)
 endif()
 list(APPEND glim_LIBRARIES glim)
+
+if(BUILD_TESTING)
+  enable_testing()
+  add_executable(test_async_imu_gate tests/test_async_imu_gate.cpp)
+  target_link_libraries(test_async_imu_gate glim)
+  add_test(NAME async_imu_gate COMMAND test_async_imu_gate)
+  set_tests_properties(async_imu_gate PROPERTIES TIMEOUT 10)
+endif()
 
 # Create shared libraries for estimation modules
 list(APPEND module_srcs

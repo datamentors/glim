@@ -89,7 +89,11 @@ void AsyncOdometryEstimation::run() {
       const Eigen::Vector3d angular_vel = imu.block<3, 1>(4, 0);
       odometry_estimation->insert_imu(stamp, linear_acc, angular_vel);
 
-      last_imu_time = stamp;
+      // Optional IMU samples must not replace the unbounded coverage used by
+      // backends such as RESPLE, which enforce their own spline coverage.
+      if (enable_imu) {
+        last_imu_time = stamp;
+      }
     }
 
 #ifdef GLIM_USE_OPENCV
